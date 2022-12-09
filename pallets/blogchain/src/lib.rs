@@ -3,7 +3,6 @@
 /// Edit this file to define custom logic or remove it if it is not needed.
 /// Learn more about FRAME and the core library of Substrate FRAME pallets:
 /// <https://docs.substrate.io/v3/runtime/frame>
-
 pub use pallet::*;
 #[cfg(test)]
 mod mock;
@@ -16,7 +15,10 @@ mod benchmarking;
 
 #[frame_support::pallet]
 pub mod pallet {
-	use frame_support::{pallet_prelude::*, inherent::Vec, traits::Currency, sp_runtime::traits::Hash, transactional, traits::ExistenceRequirement};
+	use frame_support::{
+		inherent::Vec, pallet_prelude::*, sp_runtime::traits::Hash, traits::Currency,
+		traits::ExistenceRequirement, transactional,
+	};
 	use frame_system::pallet_prelude::*;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
@@ -26,28 +28,29 @@ pub mod pallet {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		type Currency: Currency<Self::AccountId>; // <-- new
 		#[pallet::constant]
-        type BlogPostMinBytes: Get<u32>;// <-- new
-        #[pallet::constant]
-        type BlogPostMaxBytes: Get<u32>;// <-- new
-        #[pallet::constant]
-        type BlogPostCommentMinBytes: Get<u32>;// <-- new
-        #[pallet::constant]
-        type BlogPostCommentMaxBytes: Get<u32>; // <-- new
+		type BlogPostMinBytes: Get<u32>; // <-- new
+		#[pallet::constant]
+		type BlogPostMaxBytes: Get<u32>; // <-- new
+		#[pallet::constant]
+		type BlogPostCommentMinBytes: Get<u32>; // <-- new
+		#[pallet::constant]
+		type BlogPostCommentMaxBytes: Get<u32>; // <-- new
 	}
 
 	#[derive(Clone, Encode, Decode, PartialEq, RuntimeDebug, TypeInfo)]
 	#[scale_info(skip_type_params(T))]
 	pub struct BlogPost<T: Config> {
-			pub content: Vec<u8>,
-			pub author: <T as frame_system::Config>::AccountId,
+		pub title: Vec<u8>,
+		pub content: Vec<u8>,
+		pub author: <T as frame_system::Config>::AccountId,
 	}
 
 	#[derive(Clone, Encode, Decode, PartialEq, RuntimeDebug, TypeInfo)]
 	#[scale_info(skip_type_params(T))]
 	pub struct BlogPostComment<T: Config> {
-			pub content: Vec<u8>,
-			pub blog_post_id: T::Hash,
-			pub author: <T as frame_system::Config>::AccountId,
+		pub content: Vec<u8>,
+		pub blog_post_id: T::Hash,
+		pub author: <T as frame_system::Config>::AccountId,
 	}
 
 	#[pallet::pallet]
@@ -70,10 +73,9 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn blog_post_comments)]
 	pub(super) type BlogPostComments<T: Config> =
-        StorageMap<_, Twox64Concat, T::Hash, Vec<BlogPostComment<T>>>;
+		StorageMap<_, Twox64Concat, T::Hash, Vec<BlogPostComment<T>>>;
 	// Pallets use events to inform users when important changes are made.
 	// https://docs.substrate.io/v3/runtime/events-and-errors
-
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -81,9 +83,9 @@ pub mod pallet {
 		/// Event documentation should end with an array that provides descriptive names for event
 		/// parameters. [something, who]
 		SomethingStored(u32, T::AccountId),
-		BlogPostCreated(Vec<u8>, T::AccountId, T::Hash),
-        BlogPostCommentCreated(Vec<u8>, T::AccountId, T::Hash),
-        Tipped(T::AccountId, T::Hash),
+		BlogPostCreated(Vec<u8>, Vec<u8>, T::AccountId, T::Hash),
+		BlogPostCommentCreated(Vec<u8>, T::AccountId, T::Hash),
+		Tipped(T::AccountId, T::Hash),
 	}
 
 	// Errors inform users that something went wrong.
@@ -93,12 +95,12 @@ pub mod pallet {
 		NoneValue,
 		/// Errors should have helpful documentation associated with them.
 		StorageOverflow,
-		BlogPostNotEnoughBytes, // <-- new
-        BlogPostTooManyBytes, // <-- new
-        BlogPostCommentNotEnoughBytes,// <-- new
-        BlogPostCommentTooManyBytes,// <-- new
-        BlogPostNotFound,// <-- new
-        TipperIsAuthor,// <-- new
+		BlogPostNotEnoughBytes,        // <-- new
+		BlogPostTooManyBytes,          // <-- new
+		BlogPostCommentNotEnoughBytes, // <-- new
+		BlogPostCommentTooManyBytes,   // <-- new
+		BlogPostNotFound,              // <-- new
+		TipperIsAuthor,                // <-- new
 	}
 
 	// Dispatchable functions allows users to interact with the pallet and invoke state changes.
@@ -126,7 +128,9 @@ pub mod pallet {
 
 		/// An example dispatchable that may throw a custom error.
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
-		pub fn cause_error(origin: OriginFor<T>) -> DispatchResult {
+		pub fn cause_error(
+			origin: OriginFor<T>
+		) -> DispatchResult {
 			let _who = ensure_signed(origin)?;
 
 			// Read a value from storage.
@@ -145,21 +149,32 @@ pub mod pallet {
 
 		#[pallet::weight(10000)]
 		#[transactional]
-		pub fn create_blog_post(origin: OriginFor<T>, content: Vec<u8>) -> DispatchResult {
+		pub fn create_blog_post(
+			origin: OriginFor<T>,
+			title: Vec<u8>,
+			content: Vec<u8>,
+		) -> DispatchResult {
 			let author = ensure_signed(origin)?;
 
 			ensure!(
-					(content.len() as u32) > T::BlogPostMinBytes::get(),
-					<Error<T>>::BlogPostNotEnoughBytes
+				(title.len() as u32) > T::BlogPostMinBytes::get(),
+				<Error<T>>::BlogPostNotEnoughBytes
 			);
-
 			ensure!(
-					(content.len() as u32) < T::BlogPostMaxBytes::get(),
-					<Error<T>>::BlogPostTooManyBytes
+				(title.len() as u32) < T::BlogPostMaxBytes::get(),
+				<Error<T>>::BlogPostTooManyBytes
+			);
+			ensure!(
+				(content.len() as u32) > T::BlogPostMinBytes::get(),
+				<Error<T>>::BlogPostNotEnoughBytes
+			);
+			ensure!(
+				(content.len() as u32) < T::BlogPostMaxBytes::get(),
+				<Error<T>>::BlogPostTooManyBytes
 			);
 
-			let blog_post = BlogPost { content: content.clone(), author: author.clone() };
-
+			let blog_post =
+				BlogPost { title: title.clone(), content: content.clone(), author: author.clone() };
 			let blog_post_id = T::Hashing::hash_of(&blog_post);
 
 			<BlogPosts<T>>::insert(blog_post_id, blog_post);
@@ -167,48 +182,48 @@ pub mod pallet {
 			let comments_vec: Vec<BlogPostComment<T>> = Vec::new();
 			<BlogPostComments<T>>::insert(blog_post_id, comments_vec);
 
-			Self::deposit_event(Event::BlogPostCreated(content, author, blog_post_id));
+			Self::deposit_event(Event::BlogPostCreated(title, content, author, blog_post_id));
 
 			Ok(())
 		}
 
 		#[pallet::weight(5000)]
 		pub fn create_blog_post_comment(
-				origin: OriginFor<T>,
-				content: Vec<u8>,
-				blog_post_id: T::Hash,
+			origin: OriginFor<T>,
+			content: Vec<u8>,
+			blog_post_id: T::Hash,
 		) -> DispatchResult {
 			let comment_author = ensure_signed(origin)?;
 
 			ensure!(
-					(content.len() as u32) > T::BlogPostMinBytes::get(),
-					<Error<T>>::BlogPostCommentNotEnoughBytes
+				(content.len() as u32) > T::BlogPostMinBytes::get(),
+				<Error<T>>::BlogPostCommentNotEnoughBytes
 			);
 
 			ensure!(
-					(content.len() as u32) < T::BlogPostMaxBytes::get(),
-					<Error<T>>::BlogPostCommentTooManyBytes
+				(content.len() as u32) < T::BlogPostMaxBytes::get(),
+				<Error<T>>::BlogPostCommentTooManyBytes
 			);
 
 			let blog_post_comment = BlogPostComment {
-					author: comment_author.clone(),
-					content: content.clone(),
-					blog_post_id: blog_post_id.clone(),
+				author: comment_author.clone(),
+				content: content.clone(),
+				blog_post_id: blog_post_id.clone(),
 			};
 
 			<BlogPostComments<T>>::mutate(blog_post_id, |comments| match comments {
-					None => Err(()),
-					Some(vec) => {
-							vec.push(blog_post_comment);
-							Ok(())
-					},
+				None => Err(()),
+				Some(vec) => {
+					vec.push(blog_post_comment);
+					Ok(())
+				},
 			})
 			.map_err(|_| <Error<T>>::BlogPostNotFound)?;
 
 			Self::deposit_event(Event::BlogPostCommentCreated(
-					content,
-					comment_author,
-					blog_post_id,
+				content,
+				comment_author,
+				blog_post_id,
 			));
 
 			Ok(())
@@ -216,28 +231,27 @@ pub mod pallet {
 
 		#[pallet::weight(500)]
 		pub fn tip_blog_post(
-				origin: OriginFor<T>,
-				blog_post_id: T::Hash,
-				amount: <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance,
+			origin: OriginFor<T>,
+			blog_post_id: T::Hash,
+			amount: <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance,
 		) -> DispatchResult {
-				let tipper = ensure_signed(origin)?;
+			let tipper = ensure_signed(origin)?;
 
-				let blog_post = Self::blog_posts(&blog_post_id).ok_or(<Error<T>>::BlogPostNotFound)?;
-				let blog_post_author = blog_post.author;
+			let blog_post = Self::blog_posts(&blog_post_id).ok_or(<Error<T>>::BlogPostNotFound)?;
+			let blog_post_author = blog_post.author;
 
-				ensure!(tipper != blog_post_author, <Error<T>>::TipperIsAuthor);
+			ensure!(tipper != blog_post_author, <Error<T>>::TipperIsAuthor);
 
-				T::Currency::transfer(
-						&tipper,
-						&blog_post_author,
-						amount,
-						ExistenceRequirement::KeepAlive,
-				)?;
+			T::Currency::transfer(
+				&tipper,
+				&blog_post_author,
+				amount,
+				ExistenceRequirement::KeepAlive,
+			)?;
 
-				Self::deposit_event(Event::Tipped(tipper, blog_post_id));
+			Self::deposit_event(Event::Tipped(tipper, blog_post_id));
 
-				Ok(())
+			Ok(())
 		}
-
 	}
 }
