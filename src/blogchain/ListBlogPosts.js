@@ -1,24 +1,27 @@
 import { useSubstrateState } from '../substrate-lib'
 import { Grid, Button, Modal } from 'semantic-ui-react'
 import { useEffect, useState } from 'react'
+
 import CreateComment from './CreateComment'
 import Tip from './Tip'
 
 function ListBlogPosts() {
   const { api } = useSubstrateState()
-  const [ blogPosts, setBlogPosts ] = useState([])
-  const [ blogPostComments, setBlogPostComments ] = useState({})
+  const [blogPosts, setBlogPosts] = useState([])
+  const [blogPostComments, setBlogPostComments] = useState({})
 
   useEffect(() => {
     api.query.blogchain.blogPosts.entries().then((posts) => {
       const p = posts.map(post => {
         return {
           id: post[0].toHuman(),
+          title: post[1].toHuman().title,
           content: post[1].toHuman().content,
           author: post[1].toHuman().author,
         }
       })
-      setBlogPosts(p)
+
+      setBlogPosts(p);
     })
 
   }, [api])
@@ -37,25 +40,26 @@ function ListBlogPosts() {
   }, [api])
 
   return (
-      <Grid.Column width={8}>
-        <h1>Blogposts</h1>
-        {blogPosts.map((post) => {
-          return <BlogPost key={post.id} post={post} comments={blogPostComments[post.id]}/>
-        })}
-      </Grid.Column>
+    <Grid.Column width={8}>
+      <h1>Blogposts</h1>
+      {blogPosts.map((post) => {
+        return <BlogPost key={post.id} post={post} comments={blogPostComments[post.id]} />
+      })}
+    </Grid.Column>
   )
 }
 
 function BlogPost(props) {
-  const { post, comments } = props
+  const { post, comments } = props;
 
   return (
     <div>
       id: {post.id} <br />
-      content: {post.content.substring(0, 15) + '...'} <br />
-      author: {post.author}<br />
+      title: {post.title} <br />
+      content: {post.content} <br />
+      author: {post.author} <br />
       <BlogPostModal post={post} comments={comments} />
-      <hr/>
+      <hr />
     </div>
   )
 }
@@ -76,13 +80,19 @@ function BlogPostModal(props) {
       <Modal.Header>Post ID: {post.id}</Modal.Header>
       <Modal.Content>
         <b>Author:</b> {post.author} <br />
+        <b>Title:</b> {post.title} <br />
         <b>Content:</b> {post.content}
       </Modal.Content>
       <Modal.Content>
         <h3>Comments:</h3>
         <ul>
           {comments && comments.map((comment) => {
-            return <li key={comment.content}>{comment.author} wrote: <br />{comment.content}</li>
+            return (
+              <li key={comment.content}>
+                {comment.author} wrote: <br />
+                {comment.content}
+              </li>
+            );
           })}
         </ul>
 
@@ -90,7 +100,6 @@ function BlogPostModal(props) {
         <Tip postId={post.id} />
       </Modal.Content>
     </Modal>
-
   )
 }
 

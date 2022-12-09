@@ -1636,6 +1636,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@faker-js/faker@npm:^7.6.0":
+  version: 7.6.0
+  resolution: "@faker-js/faker@npm:7.6.0"
+  checksum: 942af6221774e8c98a0eb6bc75265e05fb81a941170377666c3439aab9495dd321d6beedc5406f07e6ad44262b3e43c20961f666d116ad150b78e7437dd1bb2b
+  languageName: node
+  linkType: hard
+
 "@fluentui/react-component-event-listener@npm:~0.51.6":
   version: 0.51.7
   resolution: "@fluentui/react-component-event-listener@npm:0.51.7"
@@ -12746,6 +12753,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "substrate-front-end-template@workspace:."
   dependencies:
+    "@faker-js/faker": ^7.6.0
     "@polkadot/api": ^7.10.1
     "@polkadot/extension-dapp": ^0.42.7
     "@polkadot/keyring": ^8.4.1
